@@ -169,8 +169,8 @@ const Index = () => {
         .from('analysis_runs')
         .insert({
           run_id: result.run_id,
-          live_name: data.liveName,
-          sales_result: data.salesResult,
+          live_name: values.liveName,
+          sales_result: values.salesResult,
           status: 'submitted',
           progress: 0,
         })
