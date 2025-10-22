@@ -4,6 +4,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
 };
 
+if (!taskId) { ... }
+
 const CREWAI_API_BASE = 'https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com';
 const CREWAI_BEARER_TOKEN = 'e8d887d0c44e';
 
@@ -32,7 +34,7 @@ Deno.serve(async (req) => {
     const userScope = req.headers.get('x-user-authorization');
     if (userScope) forwardHeaders['X-User-Authorization'] = userScope;
     const response = await fetch(
-      `${CREWAI_API_BASE}/status/${encodeURIComponent(runId)}`,
+      `${CREWAI_API_BASE}/status/${encodeURIComponent(taskId)}`,
       { method: 'GET', headers: forwardHeaders }
     );
 
