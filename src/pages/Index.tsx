@@ -125,6 +125,7 @@ const Index = () => {
         chat_txt: cleanedChatText,
         transcription_txt: cleanedTranscriptText,
         webhook_url: webhookUrl,
+        filename: `relatorio_${formData.liveName}.docx`
       };
 
       console.log("Enviando kickoff para CrewAI...");
