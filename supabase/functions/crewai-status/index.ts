@@ -1,0 +1,70 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const CREWAI_API_BASE = 'https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com';
+const CREWAI_BEARER_TOKEN = 'e8d887d0c44e';
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const runId = url.searchParams.get('run_id');
+
+    if (!runId) {
+      return new Response(
+        JSON.stringify({ error: 'run_id parameter is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Fetching status for run_id:', runId);
+
+    // Call CrewAI status endpoint
+    const response = await fetch(
+      `${CREWAI_API_BASE}/status?run_id=${encodeURIComponent(runId)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${CREWAI_BEARER_TOKEN}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('CrewAI status error:', response.status, errorText);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to fetch status from CrewAI',
+          status: response.status,
+          details: errorText
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const statusData = await response.json();
+    console.log('CrewAI status response:', statusData);
+
+    return new Response(
+      JSON.stringify(statusData),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Status check error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

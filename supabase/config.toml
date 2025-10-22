@@ -1,0 +1,7 @@
+project_id = "fcfmhyvpjptcwxinopmu"
+
+[functions.crewai-webhook]
+verify_jwt = false
+
+[functions.crewai-status]
+verify_jwt = false
