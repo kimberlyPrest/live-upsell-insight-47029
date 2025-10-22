@@ -125,7 +125,7 @@ const Index = () => {
         chat_txt: cleanedChatText,
         transcription_txt: cleanedTranscriptText,
         webhook_url: webhookUrl,
-        filename: `relatorio_${Data.liveName}.docx`
+        filename: `relatorio_${data.liveName}.docx`
       };
 
       // ADICIONE ESTES LOGS TAMBÉM:
@@ -136,7 +136,7 @@ const Index = () => {
       console.log('chat_txt length:', cleanedChatText.length);
       console.log('transcription_txt length:', cleanedTranscriptText.length);
       console.log('webhook_url:', webhookUrl);
-      console.log('filename:', `relatorio_${data.liveName}.docx`);
+      console.log('filename:', payload.filename);
 
       console.log("Enviando kickoff para CrewAI...");
       console.log("Webhook URL:", webhookUrl);
