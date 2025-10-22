@@ -16,7 +16,7 @@ const formSchema = z.object({
   salesResult: z.string().trim().min(1, { message: "Resultado de vendas é obrigatório" }),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 interface AnalysisRun {
   id: string;
@@ -42,7 +42,7 @@ const Index = () => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<FormData>({
+  } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
   });
 
@@ -66,7 +66,8 @@ const Index = () => {
     }
   };
 
-  const onSubmit = async (data: FormData) => {
+  import type { SubmitHandler } from "react-hook-form";
+  const onSubmit: SubmitHandler<FormValues> = async (values) => {
     // Validate all files are uploaded
     if (!csvFile || !chatFile || !transcriptFile) {
       toast.error("Por favor, faça upload de todos os arquivos obrigatórios");
@@ -119,19 +120,19 @@ const Index = () => {
 
       // Prepare JSON payload
       const payload = {
-        live_name: data.liveName,
-        sales_result: data.salesResult,
+        live_name: values.liveName,
+        sales_result: values.salesResult,
         participants_csv: cleanedCsvText,
         chat_txt: cleanedChatText,
         transcription_txt: cleanedTranscriptText,
         webhook_url: webhookUrl,
-        filename: `relatorio_${data.liveName}.docx`
+        filename: `relatorio_${values.liveName}.docx`
       };
 
       // ADICIONE ESTES LOGS TAMBÉM:
       console.log('=== DEBUG PAYLOAD ===');
-      console.log('live_name:', data.liveName);
-      console.log('sales_result:', data.salesResult);
+      console.log('live_name:', values.liveName);
+      console.log('sales_result:', values.salesResult);
       console.log('participants_csv length:', cleanedCsvText.length);
       console.log('chat_txt length:', cleanedChatText.length);
       console.log('transcription_txt length:', cleanedTranscriptText.length);
