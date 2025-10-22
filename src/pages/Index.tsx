@@ -119,30 +119,43 @@ const Index = () => {
       const cleanedTranscriptText = removeBOM(transcriptText);
 
       // Prepare JSON payload
+      const safeLiveName = values.liveName.replace(/[^\w\-]+/g, "_").slice(0, 80);
+      const filename = `relatorio_${safeLiveName}.docx`;
+
+      // 2) Monte o payload com wrapper "inputs" (incluindo webhook_url e filename DENTRO de inputs)
       const payload = {
-        live_name: values.liveName,
-        sales_result: values.salesResult,
-        participants_csv: cleanedCsvText,
-        chat_txt: cleanedChatText,
-        transcription_txt: cleanedTranscriptText,
-        webhook_url: webhookUrl,
-        filename: `relatorio_${values.liveName}.docx`
+        inputs: {
+          live_name: values.liveName,
+          sales_result: values.salesResult,
+          participants_csv: cleanedCsvText,
+          chat_txt: cleanedChatText,
+          transcription_txt: cleanedTranscriptText,
+          webhook_url: webhookUrl,  // dentro de inputs
+          filename,                 // dentro de inputs
+        },
       };
 
-      // ADICIONE ESTES LOGS TAMBÉM:
-      console.log('=== DEBUG PAYLOAD ===');
-      console.log('live_name:', values.liveName);
-      console.log('sales_result:', values.salesResult);
-      console.log('participants_csv length:', cleanedCsvText.length);
-      console.log('chat_txt length:', cleanedChatText.length);
-      console.log('transcription_txt length:', cleanedTranscriptText.length);
-      console.log('webhook_url:', webhookUrl);
-      console.log('filename:', payload.filename);
+      // Debug útil (não imprime conteúdo inteiro dos arquivos, só tamanho)
+      console.log("=== DEBUG PAYLOAD ===");
+      console.log(
+        JSON.stringify(
+          {
+            inputs: {
+              ...payload.inputs,
+              participants_csv: `len:${cleanedCsvText.length}`,
+              chat_txt: `len:${cleanedChatText.length}`,
+              transcription_txt: `len:${cleanedTranscriptText.length}`,
+            },
+          },
+          null,
+          2
+        )
+      );
 
       console.log("Enviando kickoff para CrewAI...");
       console.log("Webhook URL:", webhookUrl);
 
-      // Send to CrewAI as JSON
+      // Enviar como JSON
       const response = await fetch(
         "https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com/kickoff",
         {
@@ -150,6 +163,8 @@ const Index = () => {
           headers: {
             "Authorization": "Bearer e8d887d0c44e",
             "Content-Type": "application/json",
+            // Se seu projeto no CrewAI exigir escopo por usuário, descomente:
+            // "X-User-Authorization": "Bearer 3939230edd04",
           },
           body: JSON.stringify(payload),
         }
@@ -158,17 +173,21 @@ const Index = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("CrewAI error:", errorText);
-        throw new Error(`Erro ao processar análise: ${response.status} - ${errorText || response.statusText}`);
       }
 
       const result = await response.json();
       console.log("CrewAI kickoff response:", result);
 
-      // Save to database
+      // Extrair ID de forma defensiva (alguns deploys usam task_id/id)
+      if (!runId) {
+        throw new Error("Kickoff retornou sem identificador (run_id/task_id/id).");
+      }
+
+      // Salvar no banco
       const { data: dbData, error: dbError } = await supabase
         .from('analysis_runs')
         .insert({
-          run_id: result.run_id,
+          run_id: runId,
           live_name: values.liveName,
           sales_result: values.salesResult,
           status: 'submitted',
