@@ -1,6 +1,7 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-user-authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
 };
 
 const CREWAI_API_BASE = 'https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com';
@@ -14,7 +15,6 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const runId = url.searchParams.get('run_id');
 
     if (!runId) {
       return new Response(
@@ -26,14 +26,14 @@ Deno.serve(async (req) => {
     console.log('Fetching status for run_id:', runId);
 
     // Call CrewAI status endpoint
+    const forwardHeaders: Record<string, string> = {
+      'Authorization': `Bearer ${CREWAI_BEARER_TOKEN}`,
+    };
+    const userScope = req.headers.get('x-user-authorization');
+    if (userScope) forwardHeaders['X-User-Authorization'] = userScope;
     const response = await fetch(
-      `${CREWAI_API_BASE}/status?run_id=${encodeURIComponent(runId)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${CREWAI_BEARER_TOKEN}`,
-        },
-      }
+      `${CREWAI_API_BASE}/status/${encodeURIComponent(runId)}`,
+      { method: 'GET', headers: forwardHeaders }
     );
 
     if (!response.ok) {
