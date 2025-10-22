@@ -58,14 +58,18 @@ export const FileUpload = ({
       // Validar extensão (igual ao handleDrop)
       const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
       const acceptedExtensions = accept.split(',').map(ext => ext.trim().replace('.', ''));
+      
+      if (!acceptedExtensions.includes(fileExtension || '')) {
         onFileChange(null);
         return;
       }
+      
       // Validar tamanho
       if (selectedFile.size > maxSize) {
         onFileChange(null);
         return;
       }
+      
       onFileChange(selectedFile);
     }
   };

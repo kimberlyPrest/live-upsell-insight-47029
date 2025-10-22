@@ -79,27 +79,61 @@ const Index = () => {
       // Get webhook URL (our edge function)
       const webhookUrl = `${window.location.origin}/functions/v1/crewai-webhook`;
       
-      // Prepare FormData
-      const formData = new FormData();
-      formData.append('live_name', data.liveName);
-      formData.append('sales_result', data.salesResult);
-      formData.append('participants_csv', csvFile);
-      formData.append('chat_txt', chatFile);
-      formData.append('transcription_txt', transcriptFile);
-      formData.append('webhook_url', webhookUrl);
+      // Helper: remove BOM (Byte Order Mark)
+      const removeBOM = (text: string): string => {
+        return text.replace(/^\uFEFF/, '');
+      };
+
+      // Helper: normalize CSV headers from Zoom
+      const normalizeCsvHeaders = (csvText: string): string => {
+        const lines = csvText.split('\n');
+        if (lines.length === 0) return csvText;
+        
+        // Normalize the header line
+        const header = lines[0]
+          .replace(/Name \(Original Name\)/gi, 'Name')
+          .replace(/User Name \(Original Name\)/gi, 'Name')
+          .trim();
+        
+        return [header, ...lines.slice(1)].join('\n');
+      };
+
+      // Read files as text
+      console.log("Lendo arquivos...");
+      const [csvText, chatText, transcriptText] = await Promise.all([
+        csvFile.text(),
+        chatFile.text(),
+        transcriptFile.text(),
+      ]);
+
+      // Clean and normalize content
+      const cleanedCsvText = normalizeCsvHeaders(removeBOM(csvText));
+      const cleanedChatText = removeBOM(chatText);
+      const cleanedTranscriptText = removeBOM(transcriptText);
+
+      // Prepare JSON payload
+      const payload = {
+        live_name: data.liveName,
+        sales_result: data.salesResult,
+        participants_csv: cleanedCsvText,
+        chat_txt: cleanedChatText,
+        transcription_txt: cleanedTranscriptText,
+        webhook_url: webhookUrl,
+      };
 
       console.log("Enviando kickoff para CrewAI...");
       console.log("Webhook URL:", webhookUrl);
 
-      // Send to CrewAI
+      // Send to CrewAI as JSON
       const response = await fetch(
         "https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com/kickoff",
         {
           method: "POST",
           headers: {
             "Authorization": "Bearer e8d887d0c44e",
+            "Content-Type": "application/json",
           },
-          body: formData,
+          body: JSON.stringify(payload),
         }
       );
 

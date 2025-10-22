@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     console.log('Webhook payload:', JSON.stringify(payload, null, 2));
 
-    const { run_id, status, result, error } = payload;
+    const { run_id, status, result, error, report_metadata, report_base64, report_url } = payload;
 
     if (!run_id) {
       console.error('Missing run_id in webhook payload');
@@ -48,6 +48,20 @@ Deno.serve(async (req) => {
         console.log('Received base64 report (not storing yet)');
       }
       updateData.progress = 100;
+    }
+
+    // Also check top-level fields for report
+    if (report_url) {
+      updateData.report_url = report_url;
+    } else if (report_base64) {
+      // Create data URL for base64
+      updateData.report_url = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${report_base64}`;
+    } else if (report_metadata && typeof report_metadata === 'object') {
+      // Extract from metadata
+      const metadataUrl = report_metadata.url || report_metadata.report_url;
+      if (metadataUrl) {
+        updateData.report_url = metadataUrl;
+      }
     }
 
     if (error) {
