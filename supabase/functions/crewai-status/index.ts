@@ -4,8 +4,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
 };
 
-if (!taskId) { ... }
-
 const CREWAI_API_BASE = 'https://upsell-navigator-live-performance-analyzer--dd4ca982.crewai.com';
 const CREWAI_BEARER_TOKEN = 'e8d887d0c44e';
 
@@ -18,21 +16,27 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
 
-    if (!runId) {
+    // Compatibilidade: aceitar run_id ou task_id via query (front pode continuar usando run_id)
+
+    if (!taskId) {
       return new Response(
-        JSON.stringify({ error: 'run_id parameter is required' }),
+        JSON.stringify({ error: 'Parâmetro obrigatório ausente: task_id ou run_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Fetching status for run_id:', runId);
+    console.log('Fetching status for task_id:', taskId);
 
-    // Call CrewAI status endpoint
+    // Headers obrigatórios e repasse de escopo de usuário (se vier do front)
     const forwardHeaders: Record<string, string> = {
       'Authorization': `Bearer ${CREWAI_BEARER_TOKEN}`,
     };
     const userScope = req.headers.get('x-user-authorization');
-    if (userScope) forwardHeaders['X-User-Authorization'] = userScope;
+    if (userScope) {
+      forwardHeaders['X-User-Authorization'] = userScope;
+    }
+
+    // Novo formato: path param
     const response = await fetch(
       `${CREWAI_API_BASE}/status/${encodeURIComponent(taskId)}`,
       { method: 'GET', headers: forwardHeaders }
@@ -42,7 +46,7 @@ Deno.serve(async (req) => {
       const errorText = await response.text();
       console.error('CrewAI status error:', response.status, errorText);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Failed to fetch status from CrewAI',
           status: response.status,
           details: errorText
@@ -62,7 +66,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Status check error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'
       }),
