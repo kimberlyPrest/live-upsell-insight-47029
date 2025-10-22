@@ -79,23 +79,29 @@ const Index = () => {
       // Get webhook URL (our edge function)
       const webhookUrl = `${window.location.origin}/functions/v1/crewai-webhook`;
       
-      // Helper: remove BOM (Byte Order Mark)
-      const removeBOM = (text: string): string => {
-        return text.replace(/^\uFEFF/, '');
-      };
+           // Helper: remove BOM (Byte Order Mark)
+      const removeBOM = (text: string): string => text.replace(/^\uFEFF/, '');
 
       // Helper: normalize CSV headers from Zoom
       const normalizeCsvHeaders = (csvText: string): string => {
-        const lines = csvText.split('\n');
-        if (lines.length === 0) return csvText;
-        
-        // Normalize the header line
-        const header = lines[0]
-          .replace(/Name \(Original Name\)/gi, 'Name')
-          .replace(/User Name \(Original Name\)/gi, 'Name')
-          .trim();
-        
-        return [header, ...lines.slice(1)].join('\n');
+      const clean = removeBOM(csvText);
+      const lines = clean.split(/\r?\n/);
+      if (lines.length === 0) return clean;
+
+      const header = lines[0];
+      const replacedHeader = header
+        .replace(/Name \(original name\)/i, 'Name')
+        .replace(/User Name \(original name\)/i, 'Name')
+        .replace(/Name \(Original Name\)/i, 'Name') // sua var. original
+        .replace(/Duration \(minutes\)/i, 'Duration')
+        .replace(/Recording disclaimer response/i, 'Recording disclaimer')
+        .trim();
+
+      if (replacedHeader !== header) {
+        lines[0] = replacedHeader;
+        return lines.join('\r\n');
+      }
+      return clean;
       };
 
       // Read files as text
