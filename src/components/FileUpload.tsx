@@ -55,6 +55,13 @@ export const FileUpload = ({
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Validar extensão (igual ao handleDrop)
+      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
+      const acceptedExtensions = accept.split(',').map(ext => ext.trim().replace('.', ''));
+        onFileChange(null);
+        return;
+      }
+      // Validar tamanho
       if (selectedFile.size > maxSize) {
         onFileChange(null);
         return;
